@@ -1,0 +1,62 @@
+#  - sensor:
+## server power tracker og monitor ##
+## Beregn aktive services ##
+      - name: "Megalageret Services Active"
+        unique_id: megalageret_services_active
+        state: >
+          {% set services = [
+            states('sensor.megalageret_compose'),
+            states('sensor.megalageret_compose_2'),
+            states('sensor.megalageret_compose_4'),
+            states('sensor.megalageret_compose_5'),
+            states('sensor.megalageret_compose_6'),
+            states('sensor.megalageret_compose_7'),
+            states('sensor.megalageret_compose_8'),
+            states('sensor.megalageret_compose_9'),
+            states('sensor.megalageret_compose_11'),
+            states('sensor.megalageret_compose_12'),
+            states('sensor.megalageret_compose_14'),
+            states('sensor.megalageret_compose_15'),
+            states('sensor.megalageret_compose_16'),
+            states('sensor.megalageret_compose_18'),
+            states('sensor.megalageret_compose_19'),
+            states('sensor.megalageret_compose_20'),
+            states('sensor.megalageret_compose_21'),
+            states('sensor.megalageret_compose_22'),
+            states('sensor.megalageret_compose_23'),
+            states('sensor.megalageret_compose_24'),
+            states('sensor.megalageret_compose_25'),
+            states('sensor.megalageret_compose_29')
+          ] %}
+          {{ services | select('eq', 'on') | list | count }}
+        unit_of_measurement: "services"
+        icon: mdi:cog
+
+      - name: "Megalageret Services Total"
+        unique_id: megalageret_services_total
+        state: "22"
+        unit_of_measurement: "services"
+        icon: mdi:cog-outline
+
+      # Månedlig kWh beregning
+      - name: "Server Monthly kWh"
+        unique_id: server_monthly_kwh
+        state: >
+          {% set power_w = states('sensor.server_energimaler_power') | float(0) %}
+          {% set hours_in_month = now().replace(day=1).replace(month=now().month+1) - now().replace(day=1) %}
+          {% set days_in_month = (hours_in_month.total_seconds() / 86400) | round(0) %}
+          {% set hours_so_far = (now() - now().replace(day=1)).total_seconds() / 3600 %}
+          {% set kwh_so_far = (power_w * hours_so_far) / 1000 %}
+          {{ kwh_so_far | round(1) }}
+        unit_of_measurement: "kWh"
+        icon: mdi:flash
+
+      # Månedlige omkostninger
+      - name: "Server Monthly Cost"
+        unique_id: server_monthly_cost
+        state: >
+          {% set kwh = states('sensor.server_monthly_kwh') | float(0) %}
+          {% set price = states('sensor.energi_data_service') | float(0) %}
+          {{ (kwh * price) | round(2) }}
+        unit_of_measurement: "DKK"
+        icon: mdi:currency-krw

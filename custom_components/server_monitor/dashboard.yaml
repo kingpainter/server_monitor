@@ -1,0 +1,221 @@
+title: Server Monitor
+icon: ""
+path: server-monitor
+badges: []
+cards:
+  - type: glance
+    title: Server Status
+    entities:
+      - entity: sensor.megalageret_system_uptime
+        name: Oppetid
+        icon: mdi:clock-outline
+      - entity: binary_sensor.megalageret_system_reboot_pending
+        name: Reboot
+        icon: mdi:restart-alert
+      - entity: binary_sensor.megalageret_system_update_available
+        name: Opdatering
+        icon: mdi:update
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.megalageret_system_update_available
+        state: "on"
+    card:
+      type: markdown
+      content: |
+        ### ⚠️ Vedvarende Notifikationer
+        - **Softwareopdatering tilgængelig** - Kræver handling
+      style: |
+        ha-card {
+          background: #fff3cd;
+          border-left: 4px solid #ffc107;
+          color: #856404;
+        }
+  - type: vertical-stack
+    title: ⚡ Energi & Strøm
+    cards:
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: gauge
+            entity: sensor.server_energimaler_power
+            name: Live Forbrug
+            unit: W
+            min: 0
+            max: 300
+            severity:
+              green: 0
+              yellow: 150
+              red: 200
+          - type: tile
+            entity: sensor.server_energimaler_voltage
+            name: Volt
+            icon: mdi:flash
+          - type: tile
+            entity: sensor.server_energimaler_current
+            name: Ampere
+            icon: mdi:current-ac
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: sensor.energi_data_service
+            name: Strømpris
+            icon: mdi:currency-usd
+          - type: tile
+            entity: sensor.energi_data_service_co2
+            name: CO₂-udledning
+            icon: mdi:leaf
+  - type: grid
+    title: 📊 Månedlig Tracker
+    columns: 1
+    square: false
+    cards:
+      - type: tile
+        entity: sensor.server_energimaler_power
+        name: Gennemsnit
+        icon: mdi:flash
+      - type: tile
+        entity: sensor.server_monthly_kwh
+        name: kWh
+        icon: mdi:counter
+      - type: tile
+        entity: sensor.server_monthly_cost
+        name: Omkostninger
+        icon: mdi:currency-usd
+  - type: vertical-stack
+    title: 💻 Systemressourcer
+    cards:
+      - type: gauge
+        entity: sensor.megalageret_system_memory
+        name: Hukommelse (RAM)
+        unit: "%"
+        min: 0
+        max: 100
+        severity:
+          green: 0
+          yellow: 70
+          red: 85
+      - type: horizontal-stack
+        cards:
+          - graph: line
+            type: sensor
+            entity: sensor.megalageret_system_enp1s0f0_rx
+            name: Download (RX)
+            hours_to_show: 6
+            detail: 2
+          - graph: line
+            type: sensor
+            entity: sensor.megalageret_system_enp1s0f0_tx
+            name: Upload (TX)
+            hours_to_show: 6
+            detail: 2
+  - type: vertical-stack
+    title: 🔧 Services Status
+    cards:
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: sensor.megalageret_services_active
+            name: Aktive
+            icon: mdi:check-circle
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.megalageret_services_total
+            name: Total
+            icon: mdi:cog-outline
+      - type: entities
+        title: ❌ Inaktive Services
+        entities:
+          - entity: sensor.megalageret_compose_15
+            secondary_info: last-changed
+          - entity: sensor.megalageret_compose_9
+            secondary_info: last-changed
+          - entity: sensor.megalageret_compose_29
+            secondary_info: last-changed
+          - entity: sensor.megalageret_compose_11
+            secondary_info: last-changed
+  - type: vertical-stack
+    title: 📈 Historisk Data
+    cards:
+      - type: history-graph
+        entities:
+          - entity: sensor.server_energimaler_power
+            name: Strømforbrug
+        hours_to_show: 24
+        refresh_interval: 60
+      - type: statistics-graph
+        entities:
+          - sensor.server_energimaler_power
+        stat_types:
+          - mean
+          - min
+          - max
+        period: hour
+        days_to_show: 7
+  - type: markdown
+    content: |
+      ---
+      **📡 Datakilder:**
+      - **InfluxDB:** a0d7b954-influxdb:8086 (Database: stroemforbrug)
+      - **Google Sheets:** serverpowertracker
+      - **Sidste sync:** {{ now().strftime('%d/%m/%Y %H:%M') }}
+    style: |
+      ha-card {
+        background: #f8f9fa;
+        border: none;
+        box-shadow: none;
+        text-align: center;
+        font-size: 12px;
+        color: #6c757d;
+      }
+  - type: custom:mini-graph-card
+    entities:
+      - entity: sensor.server_energimaler_power
+        name: Strøm
+        color: "#ff9800"
+      - entity: sensor.megalageret_system_memory
+        name: RAM
+        color: "#f44336"
+        y_axis: secondary
+    name: Server Load vs Strømforbrug
+    hours_to_show: 24
+    points_per_hour: 4
+    show:
+      state: true
+      legend: true
+  - type: custom:navbar-card
+    routes:
+      - url: /lovelace-admin/forside
+        icon: mdi:home
+        label: Home
+      - url: /calendar
+        icon: mdi:calendar
+        label: Kalender
+      - icon: mdi:flower
+        label: Mobil Dash
+        url: /lovelace-admin/planter
+      - url: /media-browser/browser
+        icon: mdi:music
+        label: Media
+      - icon: mdi:dots-horizontal
+        label: More
+        tap_action:
+          action: open-popup
+        popup:
+          - icon: mdi:cog
+            url: /config/dashboard
+          - icon: mdi:hammer
+            url: /developer-tools/yaml
+          - icon: mdi:power
+            tap_action:
+              action: call-service
+              service: homeassistant.restart
+              service_data: {}
+              confirmation:
+                text: Are you sure you want to restart Home Assistant?
+type: masonry
