@@ -1,0 +1,11 @@
+{
+  "domain": "server_monitor",
+  "name": "Server Monitor",
+  "version": "1.0.0",
+  "documentation": "https://github.com/Konge/server_monitor",
+  "dependencies": ["http", "frontend", "panel_custom"],
+  "codeowners": [],
+  "requirements": [],
+  "iot_class": "local_polling",
+  "config_flow": true
+}

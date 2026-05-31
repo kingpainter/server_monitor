@@ -1,0 +1,61 @@
+template:
+  - sensor:
+      # ─── Docker: Kørende containers ─────────────────────────────────────────
+      - name: "Megalageret Docker Running"
+        unique_id: sm_megalageret_docker_running
+        state: >
+          {% set containers = [
+            states('sensor.container_bazarr_bazarr_state'),
+            states('sensor.container_flaresolverr_flaresolverr_state'),
+            states('sensor.container_glance_glance_state'),
+            states('sensor.container_handbrake_handbrake_state'),
+            states('sensor.container_huntarr_huntarr_state'),
+            states('sensor.container_jellyfin_jellyfin_state'),
+            states('sensor.container_mc_creative_server_mc_creative_server_state'),
+            states('sensor.container_mc_far_og_seb_survival_mc_far_og_seb_survival_state'),
+            states('sensor.container_mc_survival_server_old_old_mc_survival_server_old_old_state'),
+            states('sensor.container_minecraft_vanilla_1_minecraft_vanilla_1_state'),
+            states('sensor.container_plex_plex_state'),
+            states('sensor.container_prowlarr_prowlarr_state'),
+            states('sensor.container_qbittorrent_qbittorrent_state'),
+            states('sensor.container_radarr_radarr_state'),
+            states('sensor.container_seerr_seerr_state'),
+            states('sensor.container_sonarr_sonarr_state'),
+            states('sensor.container_tautulli_tautulli_state'),
+            states('sensor.container_unpackerr_unpackerr_state')
+          ] %}
+          {{ containers | select('eq', 'running') | list | count }}
+        unit_of_measurement: "containers"
+        icon: mdi:docker
+
+      # ─── Docker: Total containers (statisk) ─────────────────────────────────
+      - name: "Megalageret Docker Total"
+        unique_id: sm_megalageret_docker_total
+        state: "18"
+        unit_of_measurement: "containers"
+        icon: mdi:docker
+
+      # ─── Månedlig kWh ───────────────────────────────────────────────────────
+      # Bruger sensor.server_energy_consumption_energy_monthly direkte —
+      # denne nulstilles automatisk månedligt af energimålerens integration.
+      - name: "Server Monthly kWh"
+        unique_id: sm_server_monthly_kwh
+        state: >
+          {{ states('sensor.server_energy_consumption_energy_monthly') | float(0) | round(1) }}
+        unit_of_measurement: "kWh"
+        icon: mdi:flash
+        availability: >
+          {{ states('sensor.server_energy_consumption_energy_monthly') not in ['unavailable','unknown'] }}
+
+      # ─── Månedlige omkostninger ──────────────────────────────────────────────
+      # Bruger sensor.energy_hub_elhub_price_total (live timepris inkl. afgifter)
+      - name: "Server Monthly Cost"
+        unique_id: sm_server_monthly_cost
+        state: >
+          {% set kwh = states('sensor.server_energy_consumption_energy_monthly') | float(0) %}
+          {% set price = states('sensor.energy_hub_elhub_price_total') | float(0) %}
+          {{ (kwh * price) | round(2) }}
+        unit_of_measurement: "DKK"
+        icon: mdi:currency-krw
+        availability: >
+          {{ states('sensor.server_energy_consumption_energy_monthly') not in ['unavailable','unknown'] }}

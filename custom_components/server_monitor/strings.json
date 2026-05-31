@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Server Monitor",
+        "description": "Set up Server Monitor. The sidebar panel will be available after setup."
+      }
+    },
+    "abort": { "already_configured": "Server Monitor is already configured." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Panel Settings",
+        "data": {
+          "sidebar_title": "Sidebar title",
+          "sidebar_icon": "Sidebar icon (mdi:...)",
+          "panel_enabled": "Enable sidebar panel",
+          "require_admin": "Require admin access"
+        }
+      }
+    }
+  }
+}
