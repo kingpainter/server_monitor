@@ -39,7 +39,7 @@ template:
       # Bruger sensor.server_energy_consumption_energy_monthly direkte —
       # denne nulstilles automatisk månedligt af energimålerens integration.
       - name: "Server Monthly kWh"
-        unique_id: sm_server_monthly_kwh
+        unique_id: server_monthly_kwh
         state: >
           {{ states('sensor.server_energy_consumption_energy_monthly') | float(0) | round(1) }}
         unit_of_measurement: "kWh"
@@ -48,13 +48,16 @@ template:
           {{ states('sensor.server_energy_consumption_energy_monthly') not in ['unavailable','unknown'] }}
 
       # ─── Månedlige omkostninger ──────────────────────────────────────────────
-      # Bruger sensor.energy_hub_elhub_price_total (live timepris inkl. afgifter)
+      # Bruger en fast gennemsnitspris på 2,50 DKK/kWh (inkl. afgifter og transport).
+      # Live timepris (energy_hub_elhub_price_total) er IKKE brugt her — den svinger
+      # hvert 60. minut og giver en månedlig total der er misvisende og ustabil.
+      # Opdatér FIXED_PRICE_DKK_PER_KWH manuelt hvis dit gennemsnit ændrer sig.
       - name: "Server Monthly Cost"
-        unique_id: sm_server_monthly_cost
+        unique_id: server_monthly_cost
         state: >
           {% set kwh = states('sensor.server_energy_consumption_energy_monthly') | float(0) %}
-          {% set price = states('sensor.energy_hub_elhub_price_total') | float(0) %}
-          {{ (kwh * price) | round(2) }}
+          {% set FIXED_PRICE_DKK_PER_KWH = 2.50 %}
+          {{ (kwh * FIXED_PRICE_DKK_PER_KWH) | round(2) }}
         unit_of_measurement: "DKK"
         icon: mdi:currency-krw
         availability: >

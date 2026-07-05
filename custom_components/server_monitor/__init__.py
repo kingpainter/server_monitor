@@ -9,6 +9,7 @@ from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .coordinator import ServerMonitorCoordinator
 from .const import (
     CONF_PANEL_ENABLED,
     CONF_REQUIRE_ADMIN,
@@ -32,7 +33,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    entry.runtime_data = {}
+    coordinator = ServerMonitorCoordinator(hass)
+    await coordinator.async_config_entry_first_refresh()
+    entry.runtime_data = {"coordinator": coordinator}
 
     await hass.http.async_register_static_paths([
         StaticPathConfig(
@@ -51,7 +54,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         hass.components.frontend.async_remove_panel(PANEL_URL)
     except Exception:  # noqa: BLE001
-        pass
+        _LOGGER.debug("Panel '%s' was not registered when unloading — skipping removal", PANEL_URL)
     return True
 
 
