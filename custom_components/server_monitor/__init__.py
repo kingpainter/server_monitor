@@ -56,12 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
-    try:
-        frontend.async_remove_panel(hass, PANEL_URL)
-    except Exception:  # noqa: BLE001
-        _LOGGER.debug("Panel '%s' was not registered when unloading — skipping removal", PANEL_URL)
-
+    _async_remove_panel_quietly(hass)
     return unload_ok
 
 
@@ -69,14 +64,38 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
     options = entry.options
     enabled = options.get(CONF_PANEL_ENABLED, DEFAULT_PANEL_ENABLED)
 
-    try:
-        frontend.async_remove_panel(hass, PANEL_URL)
-    except Exception:  # noqa: BLE001
-        pass
+    # Always remove any existing registration first. warn_if_unknown=False
+    # keeps this quiet on a normal first-ever setup (nothing to remove yet).
+    _async_remove_panel_quietly(hass)
 
     if not enabled:
         return
 
+    try:
+        await _async_do_register_panel(hass, options)
+    except ValueError:
+        # "Overwriting panel" — something (a stale unload, a reload race,
+        # a leftover entry from before a HA restart) left the panel
+        # registered under this URL despite the removal above. Force it
+        # out of the frontend's panel registry and retry once rather than
+        # crashing the whole config entry setup.
+        _LOGGER.warning(
+            "Panel '%s' was already registered when setting up Server Monitor — "
+            "forcing removal and retrying registration once",
+            PANEL_URL,
+        )
+        _async_remove_panel_quietly(hass)
+        await _async_do_register_panel(hass, options)
+
+
+def _async_remove_panel_quietly(hass: HomeAssistant) -> None:
+    try:
+        frontend.async_remove_panel(hass, PANEL_URL, warn_if_unknown=False)
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("Panel '%s' was not registered — nothing to remove", PANEL_URL)
+
+
+async def _async_do_register_panel(hass: HomeAssistant, options) -> None:
     await async_register_panel(
         hass,
         webcomponent_name="server-monitor-panel",

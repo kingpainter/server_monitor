@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 — 2026-07-15
+
+### Fixed
+- `Error setting up entry Server Monitor for server_monitor` / `ValueError: Overwriting panel server-monitor` — the panel-removal-before-registration logic wasn't robust against a panel already being registered under the same URL (e.g. after a reload race or a stale unload). `_async_register_panel` now catches that specific `ValueError`, force-removes the conflicting registration, and retries registration once instead of crashing the whole config entry setup. `frontend.async_remove_panel` calls now also pass `warn_if_unknown=False` to avoid noisy log warnings on a normal first-ever setup.
+
 ## 1.2.0 — 2026-07-15
 
 ### Added
