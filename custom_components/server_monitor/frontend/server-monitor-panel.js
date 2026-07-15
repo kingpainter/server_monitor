@@ -11,7 +11,17 @@
  *  7. Actions      — reboot, shutdown, apply config, docker prune, power switch
  *
  * Design: sky/indigo palette. Accents: --accent #38bdf8, --accent2 #818cf8
+ *
+ * Entity IDs and value/health helpers live in server-monitor-shared.js,
+ * loaded via dynamic import() below (works whether this file itself is
+ * loaded as a classic script or an ES module).
  */
+
+let _shared = null;
+function loadShared() {
+  if (!_shared) _shared = import('/local/server_monitor/server-monitor-shared.js');
+  return _shared;
+}
 
 class ServerMonitorPanel extends HTMLElement {
   constructor() {
@@ -27,12 +37,20 @@ class ServerMonitorPanel extends HTMLElement {
     this._rxHistory    = [];
     this._txHistory    = [];
     this._powerTab     = 'power';
+    this._s            = null; // shared module, set once loaded
   }
 
   static get observedAttributes() { return ['hass', 'narrow', 'panel']; }
 
   set hass(hass) {
     this._hass = hass;
+    if (!this._s) {
+      loadShared().then(mod => {
+        this._s = mod;
+        if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+      });
+      return;
+    }
     if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
   }
 
@@ -186,13 +204,7 @@ class ServerMonitorPanel extends HTMLElement {
   }
 
   _updateDisk() {
-    const drives = [
-      { id:'nvme', usedPct:'sensor.0x2646_kingston_snv2s1000g_nvme0n1_nvme0n1_used', usedSize:'sensor.0x2646_kingston_snv2s1000g_nvme0n1_nvme0n1_used_size', freeSize:'sensor.0x2646_kingston_snv2s1000g_nvme0n1_nvme0n1_free_size', temp:'sensor.0x2646_kingston_snv2s1000g_nvme0n1_nvme0n1_temperature', smart:'sensor.0x2646_kingston_snv2s1000g_nvme0n1_smart_status' },
-      { id:'sda',  usedPct:'sensor.ata_samsung_ssd_860_pro_256gb_sda_sda_used', usedSize:'sensor.ata_samsung_ssd_860_pro_256gb_sda_sda_used_size', freeSize:'sensor.ata_samsung_ssd_860_pro_256gb_sda_sda_free_size', temp:'sensor.ata_samsung_ssd_860_pro_256gb_sda_sda_temperature', smart:'sensor.ata_samsung_ssd_860_pro_256gb_sda_smart_status' },
-      { id:'sdd',  usedPct:'sensor.ata_samsung_ssd_850_evo_250gb_sdd_sdd_used', usedSize:'sensor.ata_samsung_ssd_850_evo_250gb_sdd_sdd_used_size', freeSize:'sensor.ata_samsung_ssd_850_evo_250gb_sdd_sdd_free_size', temp:'sensor.ata_samsung_ssd_850_evo_250gb_sdd_sdd_temperature', smart:'sensor.ata_samsung_ssd_850_evo_250gb_sdd_smart_status' },
-      { id:'sdb',  usedPct:'sensor.ata_st4000nm0035_1v4107_data_sdb_data_used', usedSize:'sensor.ata_st4000nm0035_1v4107_data_sdb_data_used_size', freeSize:'sensor.ata_st4000nm0035_1v4107_data_sdb_data_free_size', temp:'sensor.ata_st4000nm0035_1v4107_data_sdb_sdb_temperature', smart:'sensor.ata_st4000nm0035_1v4107_data_sdb_smart_status' },
-      { id:'sdc',  usedPct:'sensor.ata_wdc_wd20earx_00pasb0_data2_sdc_data2_used', usedSize:'sensor.ata_wdc_wd20earx_00pasb0_data2_sdc_data2_used_size', freeSize:'sensor.ata_wdc_wd20earx_00pasb0_data2_sdc_data2_free_size', temp:'sensor.ata_wdc_wd20earx_00pasb0_data2_sdc_sdc_temperature', smart:'sensor.ata_wdc_wd20earx_00pasb0_data2_sdc_smart_status' },
-    ];
+    const drives = this._s.DRIVES;
     drives.forEach(d => {
       const pct   = this._num(d.usedPct, 0);
       const smart = this._val(d.smart);
@@ -206,6 +218,8 @@ class ServerMonitorPanel extends HTMLElement {
       const bar = this.shadowRoot.getElementById(`bar-disk-${d.id}`);
       if (bar) { bar.style.width = pct + '%'; bar.style.background = pct >= 90 ? '#ef4444' : pct >= 75 ? '#f59e0b' : '#10b981'; }
     });
+    const diskIds = drives.flatMap(d => this._s.driveEntityIds(d));
+    this._setHealthBadge('health-disk', this._s.sectionProblemCount(this._hass, diskIds));
   }
 
   _updateDocker() {
@@ -216,58 +230,47 @@ class ServerMonitorPanel extends HTMLElement {
     this._setText('dk-stopped', stopped + '');
     this._setText('dk-total',   total + '');
 
-    const containers = [
-      ['sensor.container_plex_plex_state','Plex','media'],
-      ['sensor.container_jellyfin_jellyfin_state','Jellyfin','media'],
-      ['sensor.container_tautulli_tautulli_state','Tautulli','media'],
-      ['sensor.container_seerr_seerr_state','Seerr','media'],
-      ['sensor.container_qbittorrent_qbittorrent_state','qBittorrent','download'],
-      ['sensor.container_radarr_radarr_state','Radarr','download'],
-      ['sensor.container_sonarr_sonarr_state','Sonarr','download'],
-      ['sensor.container_bazarr_bazarr_state','Bazarr','download'],
-      ['sensor.container_prowlarr_prowlarr_state','Prowlarr','download'],
-      ['sensor.container_flaresolverr_flaresolverr_state','FlareSolverr','download'],
-      ['sensor.container_huntarr_huntarr_state','Huntarr','download'],
-      ['sensor.container_unpackerr_unpackerr_state','Unpackerr','download'],
-      ['sensor.container_mc_creative_server_mc_creative_server_state','Creative','minecraft'],
-      ['sensor.container_mc_far_og_seb_survival_mc_far_og_seb_survival_state','Far & Seb','minecraft'],
-      ['sensor.container_mc_survival_server_old_old_mc_survival_server_old_old_state','Survival old','minecraft'],
-      ['sensor.container_minecraft_vanilla_1_minecraft_vanilla_1_state','Vanilla 1','minecraft'],
-      ['sensor.container_handbrake_handbrake_state','Handbrake','other'],
-      ['sensor.container_glance_glance_state','Glance','other'],
-    ];
+    const containers = this._s.CONTAINERS;
     ['media','download','minecraft','other'].forEach(stack => {
       const grid = this.shadowRoot.getElementById(`svc-grid-${stack}`);
       if (!grid) return;
       grid.innerHTML = '';
-      containers.filter(c => c[2] === stack).forEach(([eid, name]) => {
+      containers.filter(c => c.stack === stack).forEach(c => {
         const div = document.createElement('div');
-        div.className = 'svc-chip ' + (this._val(eid, 'unknown') === 'running' ? 'running' : 'stopped');
-        div.innerHTML = `<span class="svc-dot"></span><span class="svc-name">${name}</span>`;
+        div.className = 'svc-chip ' + (this._val(c.eid, 'unknown') === 'running' ? 'running' : 'stopped');
+        div.innerHTML = `<span class="svc-dot"></span><span class="svc-name">${c.name}</span>`;
         grid.appendChild(div);
       });
     });
+    const containerIds = containers.map(c => c.eid);
+    this._setHealthBadge('health-docker', this._s.sectionProblemCount(this._hass, containerIds));
   }
 
   _updateServices() {
-    const services = [
-      ['binary_sensor.omv_megalageret_local_docker_service','Docker'],
-      ['binary_sensor.omv_megalageret_local_ssh_service','SSH'],
-      ['binary_sensor.omv_megalageret_local_smb_cifs_service','SMB'],
-      ['binary_sensor.omv_megalageret_local_nfs_service','NFS'],
-      ['binary_sensor.omv_megalageret_local_rsync_server_service','RSync'],
-      ['binary_sensor.omv_megalageret_local_iperf3_service','iPerf3'],
-      ['binary_sensor.omv_megalageret_local_cterm_service','CTerm'],
-    ];
+    const services = this._s.SERVICES;
     const grid = this.shadowRoot.getElementById('services-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    services.forEach(([eid, name]) => {
+    services.forEach(sv => {
       const div = document.createElement('div');
-      div.className = 'svc-chip ' + (this._isOn(eid) ? 'running' : 'stopped');
-      div.innerHTML = `<span class="svc-dot"></span><span class="svc-name">${name}</span>`;
+      div.className = 'svc-chip ' + (this._isOn(sv.eid) ? 'running' : 'stopped');
+      div.innerHTML = `<span class="svc-dot"></span><span class="svc-name">${sv.name}</span>`;
       grid.appendChild(div);
     });
+    const serviceIds = services.map(sv => sv.eid);
+    this._setHealthBadge('health-services', this._s.sectionProblemCount(this._hass, serviceIds));
+  }
+
+  _setHealthBadge(elId, problemCount) {
+    const el = this.shadowRoot.getElementById(elId);
+    if (!el) return;
+    if (problemCount === null || problemCount === 0) {
+      el.style.display = 'none';
+      return;
+    }
+    el.textContent = `⚠ ${problemCount} mangler`;
+    el.className = 'section-health' + (problemCount >= 3 ? ' crit' : '');
+    el.style.display = 'inline';
   }
 
   _loadChartJs() {
