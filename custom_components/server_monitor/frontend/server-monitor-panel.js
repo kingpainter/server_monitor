@@ -150,6 +150,9 @@ class ServerMonitorPanel extends HTMLElement {
     this._powerHistory.push(power);
     if (this._powerHistory.length > 60) this._powerHistory.shift();
     if (this._chartLoaded) this._updatePowerChart();
+
+    const energyIds = Object.values(this._s.ENERGY_ENTITIES);
+    this._setHealthBadge('health-energi', this._s.sectionProblemCount(this._hass, energyIds));
   }
 
   _updateSystem() {
@@ -182,6 +185,9 @@ class ServerMonitorPanel extends HTMLElement {
     if (this._rxHistory.length > 30) this._rxHistory.shift();
     if (this._txHistory.length > 30) this._txHistory.shift();
     if (this._chartLoaded) this._updateNetCharts();
+
+    const systemIds = Object.values(this._s.SYSTEM_ENTITIES);
+    this._setHealthBadge('health-system', this._s.sectionProblemCount(this._hass, systemIds));
   }
 
   _updatePowerSwitch() {
@@ -429,7 +435,7 @@ class ServerMonitorPanel extends HTMLElement {
 
           <!-- ENERGI -->
           <div class="section-page" data-page="energi" style="display:block">
-            <div class="section-title">Strøm — live</div>
+            <div class="section-title">Strøm — live <span id="health-energi" class="section-health" style="display:none"></span></div>
             <div class="stat-grid four">
               <div class="stat"><div class="stat-label">Forbrug</div><div id="e-power" class="stat-value accent">—</div></div>
               <div class="stat"><div class="stat-label">Volt</div><div id="e-voltage" class="stat-value">—</div></div>
@@ -458,7 +464,7 @@ class ServerMonitorPanel extends HTMLElement {
 
           <!-- SYSTEM -->
           <div class="section-page" data-page="system" style="display:none">
-            <div class="section-title">Hukommelse & GPU</div>
+            <div class="section-title">Hukommelse & GPU <span id="health-system" class="section-health" style="display:none"></span></div>
             <div class="stat-grid two">
               <div class="stat"><div class="stat-label">RAM forbrug</div><div id="sys-ram-pct" class="stat-value accent">—</div><div class="stat-sub-row"><span id="sys-ram-used" class="stat-sub">—</span><span class="stat-sub"> / </span><span id="sys-ram-total" class="stat-sub">—</span></div></div>
               <div class="stat"><div class="stat-label">GPU load</div><div id="sys-gpu-load" class="stat-value" style="color:var(--accent2)">—</div><div id="sys-gpu-freq" class="stat-sub mono">—</div></div>
@@ -480,7 +486,7 @@ class ServerMonitorPanel extends HTMLElement {
 
           <!-- DISK -->
           <div class="section-page" data-page="disk" style="display:none">
-            <div class="section-title">Drev — overblik</div>
+            <div class="section-title">Drev — overblik <span id="health-disk" class="section-health" style="display:none"></span></div>
             ${['nvme','sda','sdd','sdb','sdc'].map(id => `
             <div class="disk-row">
               <div class="disk-info">
@@ -497,6 +503,7 @@ class ServerMonitorPanel extends HTMLElement {
 
           <!-- DOCKER -->
           <div class="section-page" data-page="docker" style="display:none">
+            <div class="section-title">Docker <span id="health-docker" class="section-health" style="display:none"></span></div>
             <div class="stat-grid three">
               <div class="stat" style="border-top:2px solid var(--green)"><div class="stat-label">Kørende</div><div id="dk-running" class="stat-value" style="color:var(--green)">—</div></div>
               <div class="stat" style="border-top:2px solid var(--red)"><div class="stat-label">Stoppede</div><div id="dk-stopped" class="stat-value" style="color:var(--red)">—</div></div>
@@ -514,7 +521,7 @@ class ServerMonitorPanel extends HTMLElement {
 
           <!-- SERVICES -->
           <div class="section-page" data-page="services" style="display:none">
-            <div class="section-title">OMV Services</div>
+            <div class="section-title">OMV Services <span id="health-services" class="section-health" style="display:none"></span></div>
             <div id="services-grid" class="svc-grid"></div>
           </div>
 
@@ -560,6 +567,8 @@ class ServerMonitorPanel extends HTMLElement {
       .panel-scroll { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:20px 28px 48px; }
       @media(max-width:600px) { .topbar{padding:12px 16px 8px} .status-bar{padding:8px 16px} .panel-scroll{padding:12px 16px 32px} }
       .section-title { font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:0.08em; margin:0 0 10px 2px; }
+      .section-health { text-transform:none; letter-spacing:normal; font-weight:600; color:var(--amber); margin-left:6px; }
+      .section-health.crit { color:var(--red); }
       .dot { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
       .dot.green { background:var(--green); box-shadow:0 0 5px rgba(16,185,129,0.5); }
       .dot.amber { background:var(--amber); box-shadow:0 0 5px rgba(245,158,11,0.5); }
