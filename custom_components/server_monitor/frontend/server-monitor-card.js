@@ -144,6 +144,16 @@ class ServerMonitorCard extends HTMLElement {
     if (updateOn)    alerts.push('Systemopdatering tilgængelig');
     if (pkgs > 0)    alerts.push(`${pkgs} pakkeopdateringer`);
     if (stopped > 0) alerts.push(`${stopped} container(e) stoppet`);
+
+    // ── Entity health (reads the backend diagnostics sensor — see const.py MONITORED_ENTITIES) ──
+    if (this._s) {
+      const health = this._hass?.states?.[this._s.HEALTH_SENSOR];
+      if (health && health.state !== 'unavailable' && health.state !== 'unknown') {
+        const problems = parseInt(health.state, 10) || 0;
+        if (problems > 0) alerts.push(`${problems} entitet(er) mangler/utilgængelig`);
+      }
+    }
+
     const banner = $('alert-banner');
     banner.style.display = alerts.length ? 'flex' : 'none';
     $('alert-text').textContent = alerts.join(' · ');
