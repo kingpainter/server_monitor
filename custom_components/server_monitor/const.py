@@ -1,7 +1,7 @@
 """Constants for Server Monitor integration."""
 
 DOMAIN = "server_monitor"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 CONF_SIDEBAR_TITLE = "sidebar_title"
 CONF_SIDEBAR_ICON = "sidebar_icon"

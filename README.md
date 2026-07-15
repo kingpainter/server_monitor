@@ -9,7 +9,7 @@ Home Assistant custom integration for monitoring the home server "megalageret" (
   - `coordinator.py` — `DataUpdateCoordinator` that polls (every 30s) whether the ~70 entities the frontend depends on (owned by other integrations: OMV, energy meter, Docker container sensors, ...) are present and available. It does **not** fetch server metrics itself.
   - `sensor.py` — exposes `sensor.server_monitor_entity_health`, a diagnostics sensor reporting how many monitored entities are missing/unavailable.
   - `const.py` — includes `MONITORED_ENTITIES`, the list of entity IDs the frontend depends on. **Kept in sync manually with the frontend JS files**, which read the same entities directly via `hass.states` for rendering.
-  - `frontend/` — `server-monitor-panel.js` (full sidebar panel) and `server-monitor-card.js` (compact card), served as static files.
+  - `frontend/` — `server-monitor-shared.js` (single source of truth for entity IDs + value/health helpers, loaded via dynamic `import()`), `server-monitor-panel.js` (full sidebar panel) and `server-monitor-card.js` (compact card), served as static files.
 - `packages/server_monitor.yaml` — HA template sensors: Docker running/total container counts, monthly kWh, and monthly cost (fixed average price, not live spot price — see comments in the file for why).
 
 ## Design notes
@@ -19,5 +19,6 @@ Home Assistant custom integration for monitoring the home server "megalageret" (
 
 ## Known limitations
 
-- The list of entity IDs the panel depends on is hardcoded in both `const.py` (for health checks) and the frontend JS files (for rendering). If OMV or another integration renames an entity, both places need updating.
+- The list of entity IDs the panel depends on is hardcoded in both `const.py` (for health checks) and `frontend/server-monitor-shared.js` (for rendering, shared between panel and card). If OMV or another integration renames an entity, both places need updating.
 - Chart.js is loaded from a CDN at panel load time; no offline fallback yet.
+- The panel/card are served via `js_url` (classic script), not `module_url`, so `server-monitor-shared.js` is loaded via dynamic `import()` at runtime rather than a static `import` statement at the top of the file. This works in all modern browsers but means the shared module loads asynchronously on first render.

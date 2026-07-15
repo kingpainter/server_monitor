@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0 — 2026-07-15
+
+### Added
+- `frontend/server-monitor-shared.js` — single source of truth for entity IDs (drives, Docker containers, OMV services, energy/system/status/action entities) plus shared value helpers (`stateOf`, `numOf`, `isOn`, `attrOf`). Loaded via dynamic `import()` from both `server-monitor-panel.js` and `server-monitor-card.js`, so the two frontend files no longer maintain separate copies of the same ~50 entity IDs.
+- Per-section "missing/unavailable" badges in the sidebar panel (Energi, System, Disk, Docker, Services) — reads `sensor.server_monitor_entity_health` (added in 1.1.0) and shows e.g. "⚠ 2 mangler" next to the section title instead of silently rendering "—".
+- The mobile card's alert banner now also surfaces entity-health problems reported by `sensor.server_monitor_entity_health`.
+
+### Changed
+- `server-monitor-card.js` config defaults are now sourced from the shared module instead of being hardcoded a second time.
+
+### Known limitation carried forward
+- The entity ID list still exists in two places by necessity: `const.py` (`MONITORED_ENTITIES`, used by the backend health-check coordinator) and `frontend/server-monitor-shared.js` (used for rendering). Keep both in sync when entities change.
+
 ## 1.1.0 — 2026-07-15
 
 ### Added
