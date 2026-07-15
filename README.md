@@ -20,5 +20,4 @@ Home Assistant custom integration for monitoring the home server "megalageret" (
 ## Known limitations
 
 - The list of entity IDs the panel depends on is hardcoded in both `const.py` (for health checks) and `frontend/server-monitor-shared.js` (for rendering, shared between panel and card). If OMV or another integration renames an entity, both places need updating.
-- Chart.js is loaded from a CDN at panel load time; no offline fallback yet.
-- The panel/card are served via `js_url` (classic script), not `module_url`, so `server-monitor-shared.js` is loaded via dynamic `import()` at runtime rather than a static `import` statement at the top of the file. This works in all modern browsers but means the shared module loads asynchronously on first render.
+- The panel/card are served via `js_url` (classic script), not `module_url`, so `server-monitor-shared.js` is loaded via dynamic `import()` at runtime rather than a static `import` statement at the top of the file. This works in all modern browsers but means the shared module loads asynchronously on first render (a loading spinner covers this gap — see CHANGELOG 1.3.0).

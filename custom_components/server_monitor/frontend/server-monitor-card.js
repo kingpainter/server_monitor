@@ -14,7 +14,7 @@ function loadShared() {
 }
 
 class ServerMonitorCard extends HTMLElement {
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this._hass = null; this._s = null; this._pendingConfig = null; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this._hass = null; this._s = null; this._pendingConfig = null; this._built = false; }
 
   setConfig(config) {
     this._pendingConfig = config || {};
@@ -47,14 +47,15 @@ class ServerMonitorCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._s) {
+      if (!this._built) this._renderLoadingSkeleton();
       loadShared().then(mod => {
         this._s = mod;
         this._applyConfig();
-        if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+        this._build();
       });
       return;
     }
-    if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+    if (!this._built) { this._build(); } else { this._update(); }
   }
 
   _val(eid, fallback = '—') { return this._hass?.states[eid]?.state ?? fallback; }
@@ -63,8 +64,26 @@ class ServerMonitorCard extends HTMLElement {
 
   _build() {
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>${this._html()}`;
+    this._built = true;
     this._bindActions();
     this._update();
+  }
+
+  _renderLoadingSkeleton() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; }
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        :host { --accent:#38bdf8; --div:var(--divider-color,rgba(148,163,184,0.12)); --radius:18px; --sub:var(--secondary-text-color,#94a3b8); }
+        .loading-card { background:var(--card-background-color); border-radius:var(--radius); border:1px solid var(--div); padding:24px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--sub); font-family:'DM Sans',var(--paper-font-body1_-_font-family,sans-serif); min-height:120px; }
+        .loading-spinner { width:24px; height:24px; border-radius:50%; border:3px solid rgba(56,189,248,0.15); border-top-color:var(--accent); animation:sm-spin 0.8s linear infinite; }
+        .loading-text { font-size:12px; }
+        @keyframes sm-spin { to { transform:rotate(360deg); } }
+      </style>
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Indlæser…</div>
+      </div>`;
   }
 
   _update() {

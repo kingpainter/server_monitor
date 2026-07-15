@@ -38,6 +38,8 @@ class ServerMonitorPanel extends HTMLElement {
     this._txHistory    = [];
     this._powerTab     = 'power';
     this._s            = null; // shared module, set once loaded
+    this._built        = false;
+    this._chartFailed  = false;
   }
 
   static get observedAttributes() { return ['hass', 'narrow', 'panel']; }
@@ -45,13 +47,14 @@ class ServerMonitorPanel extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._s) {
+      if (!this._built) this._renderLoadingSkeleton();
       loadShared().then(mod => {
         this._s = mod;
-        if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+        this._build();
       });
       return;
     }
-    if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+    if (!this._built) { this._build(); } else { this._update(); }
   }
 
   _val(eid, fallback = '—') { return this._hass?.states[eid]?.state ?? fallback; }
@@ -64,11 +67,38 @@ class ServerMonitorPanel extends HTMLElement {
 
   _build() {
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>${this._html()}`;
+    this._built = true;
     this._bindTabs();
     this._bindPowerTabs();
     this._bindActions();
-    this._loadChartJs().then(() => { this._initCharts(); this._update(); });
+    this._loadChartJs().then(() => {
+      if (this._chartFailed) { this._renderChartFallback(); } else { this._initCharts(); }
+      this._update();
+    });
     this._update();
+  }
+
+  _renderLoadingSkeleton() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; height:100%; }
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        :host { --accent:#38bdf8; --accent2:#818cf8; --bg:var(--primary-background-color,#0f1923); --text:var(--primary-text-color,#e2e8f0); --sub:var(--secondary-text-color,#94a3b8); }
+        .loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:14px; background:var(--bg); color:var(--sub); font-family:'DM Sans',var(--paper-font-body1_-_font-family,sans-serif); }
+        .loading-spinner { width:32px; height:32px; border-radius:50%; border:3px solid rgba(56,189,248,0.15); border-top-color:var(--accent); animation:sm-spin 0.8s linear infinite; }
+        .loading-text { font-size:13px; }
+        @keyframes sm-spin { to { transform:rotate(360deg); } }
+      </style>
+      <div class="loading-wrap">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Indlæser Server Monitor…</div>
+      </div>`;
+  }
+
+  _renderChartFallback() {
+    this.shadowRoot.querySelectorAll('.chart-wrap').forEach(el => {
+      el.innerHTML = '<div class="chart-fallback">📉 Graf utilgængelig — Chart.js kunne ikke hentes (tjek internetforbindelse)</div>';
+    });
   }
 
   _update() {
@@ -284,7 +314,12 @@ class ServerMonitorPanel extends HTMLElement {
       if (window.Chart) { this._chartLoaded = true; resolve(); return; }
       const s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-      s.onload = () => { this._chartLoaded = true; resolve(); };
+      const timeoutId = setTimeout(() => {
+        this._chartFailed = true;
+        resolve();
+      }, 8000);
+      s.onload = () => { clearTimeout(timeoutId); this._chartLoaded = true; resolve(); };
+      s.onerror = () => { clearTimeout(timeoutId); this._chartFailed = true; resolve(); };
       document.head.appendChild(s);
     });
   }
@@ -599,6 +634,7 @@ class ServerMonitorPanel extends HTMLElement {
       .ptab.active { background:var(--bg3); color:var(--accent); border-color:rgba(56,189,248,0.3); }
       .chart-wrap { position:relative; width:100%; height:180px; }
       .chart-wrap.small { height:120px; }
+      .chart-fallback { display:flex; align-items:center; justify-content:center; height:100%; padding:0 16px; font-size:12px; color:var(--sub); text-align:center; line-height:1.5; }
       .disk-row { margin-bottom:10px; }
       .disk-info { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
       .disk-pct { font-size:13px; font-weight:600; color:var(--text); min-width:42px; font-family:'DM Mono',monospace; }

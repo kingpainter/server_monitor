@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — 2026-07-15
+
+### Added
+- **Loading state**: panel and card now show a spinner + "Indlæser…" immediately on first render, instead of a blank element, while `server-monitor-shared.js` loads asynchronously. Tracked via a `_built` flag rather than checking `shadowRoot.innerHTML` emptiness (which broke once the skeleton itself started writing to `innerHTML`).
+- **Chart.js fallback**: `_loadChartJs()` now has an 8s timeout and an `onerror` handler. If the CDN script fails to load or times out (offline, blocked CDN, etc.), the three chart areas (power, RX, TX) show a clear "Graf utilgængelig — Chart.js kunne ikke hentes" message instead of silently staying blank forever. The rest of the panel (live values, gauges, disk/docker/services) is unaffected since it never depended on Chart.js.
+
 ## 1.2.1 — 2026-07-15
 
 ### Fixed
