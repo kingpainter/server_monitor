@@ -2,30 +2,58 @@
  * Server Monitor — Mobile Card
  * type: custom:server-monitor-card
  * Served at: /local/server_monitor/server-monitor-card.js
+ *
+ * Entity IDs used as config defaults are pulled from server-monitor-shared.js
+ * (single source of truth shared with the panel), loaded via dynamic import().
  */
+
+let _shared = null;
+function loadShared() {
+  if (!_shared) _shared = import('/local/server_monitor/server-monitor-shared.js');
+  return _shared;
+}
+
 class ServerMonitorCard extends HTMLElement {
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this._hass = null; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this._hass = null; this._s = null; this._pendingConfig = null; }
 
   setConfig(config) {
+    this._pendingConfig = config || {};
+    this._applyConfig();
+  }
+
+  _applyConfig() {
+    const config = this._pendingConfig || {};
+    const e = this._s?.ENERGY_ENTITIES || {};
+    const st = this._s?.STATUS_ENTITIES || {};
+    const dk = this._s?.DOCKER_AGG_ENTITIES || {};
+    const act = this._s?.ACTION_ENTITIES || {};
     this.config = {
       title:                 config.title                 || 'megalageret',
-      uptime_entity:         config.uptime_entity         || 'sensor.omv_megalageret_local_uptime',
-      reboot_entity:         config.reboot_entity         || 'binary_sensor.omv_megalageret_local_reboot_required',
-      update_entity:         config.update_entity         || 'update.omv_megalageret_local_system_update',
-      packages_entity:       config.packages_entity       || 'sensor.omv_megalageret_local_available_package_updates',
-      docker_running_entity: config.docker_running_entity || 'sensor.megalageret_docker_running_2',
-      docker_total_entity:   config.docker_total_entity   || 'sensor.megalageret_docker_total_2',
-      docker_stopped_entity: config.docker_stopped_entity || 'sensor.omv_megalageret_local_docker_containers_not_running',
-      power_entity:          config.power_entity          || 'sensor.server_energimaler_power',
-      price_entity:          config.price_entity          || 'sensor.energy_hub_elhub_price_total',
-      power_switch:          config.power_switch          || 'switch.megalageret_remote_socket_1',
-      reboot_button:         config.reboot_button         || 'button.omv_megalageret_local_reboot',
-      shutdown_button:       config.shutdown_button       || 'button.omv_megalageret_local_shutdown',
+      uptime_entity:         config.uptime_entity         || st.uptime         || 'sensor.omv_megalageret_local_uptime',
+      reboot_entity:         config.reboot_entity         || st.reboot         || 'binary_sensor.omv_megalageret_local_reboot_required',
+      update_entity:         config.update_entity         || st.update         || 'update.omv_megalageret_local_system_update',
+      packages_entity:       config.packages_entity       || st.packages       || 'sensor.omv_megalageret_local_available_package_updates',
+      docker_running_entity: config.docker_running_entity || dk.running        || 'sensor.megalageret_docker_running_2',
+      docker_total_entity:   config.docker_total_entity   || dk.total          || 'sensor.megalageret_docker_total_2',
+      docker_stopped_entity: config.docker_stopped_entity || st.dockerStopped  || 'sensor.omv_megalageret_local_docker_containers_not_running',
+      power_entity:          config.power_entity          || e.power           || 'sensor.server_energimaler_power',
+      price_entity:          config.price_entity          || e.price           || 'sensor.energy_hub_elhub_price_total',
+      power_switch:          config.power_switch          || e.powerSwitch     || 'switch.megalageret_remote_socket_1',
+      reboot_button:         config.reboot_button         || act.reboot        || 'button.omv_megalageret_local_reboot',
+      shutdown_button:       config.shutdown_button       || act.shutdown      || 'button.omv_megalageret_local_shutdown',
     };
   }
 
   set hass(hass) {
     this._hass = hass;
+    if (!this._s) {
+      loadShared().then(mod => {
+        this._s = mod;
+        this._applyConfig();
+        if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
+      });
+      return;
+    }
     if (!this.shadowRoot.innerHTML) { this._build(); } else { this._update(); }
   }
 
