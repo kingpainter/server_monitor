@@ -20,5 +20,18 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "entity_health": {
+        "name": "Entity health",
+        "state_attributes": {
+          "missing_entities": { "name": "Missing entities" },
+          "unavailable_entities": { "name": "Unavailable entities" },
+          "last_check": { "name": "Last check" },
+          "checked": { "name": "Entities checked" }
+        }
+      }
+    }
   }
 }

@@ -4,9 +4,11 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from homeassistant.components import frontend
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .coordinator import ServerMonitorCoordinator
@@ -26,6 +28,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 _FRONTEND_DIR = Path(__file__).parent / "frontend"
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -46,16 +49,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ])
 
     await _async_register_panel(hass, entry)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
     try:
-        hass.components.frontend.async_remove_panel(PANEL_URL)
+        frontend.async_remove_panel(hass, PANEL_URL)
     except Exception:  # noqa: BLE001
         _LOGGER.debug("Panel '%s' was not registered when unloading — skipping removal", PANEL_URL)
-    return True
+
+    return unload_ok
 
 
 async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -63,7 +70,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
     enabled = options.get(CONF_PANEL_ENABLED, DEFAULT_PANEL_ENABLED)
 
     try:
-        hass.components.frontend.async_remove_panel(PANEL_URL)
+        frontend.async_remove_panel(hass, PANEL_URL)
     except Exception:  # noqa: BLE001
         pass
 
