@@ -57,10 +57,10 @@ class ServerMonitorPanel extends HTMLElement {
     if (!this._built) { this._build(); } else { this._update(); }
   }
 
-  _val(eid, fallback = '—') { return this._hass?.states[eid]?.state ?? fallback; }
-  _num(eid, fallback = 0) { const v = parseFloat(this._val(eid, fallback)); return isNaN(v) ? fallback : v; }
-  _isOn(eid) { const s = this._val(eid, 'off'); return s === 'on' || s === 'true'; }
-  _attr(eid, attr, fallback = '—') { return this._hass?.states[eid]?.attributes?.[attr] ?? fallback; }
+  _val(eid, fallback = '—') { return this._s.stateOf(this._hass, eid, fallback); }
+  _num(eid, fallback = 0) { return this._s.numOf(this._hass, eid, fallback); }
+  _isOn(eid) { return this._s.isOn(this._hass, eid); }
+  _attr(eid, attr, fallback = '—') { return this._s.attrOf(this._hass, eid, attr, fallback); }
   _setText(id, text) { const el = this.shadowRoot.getElementById(id); if (el && text !== undefined) el.textContent = text; }
   _setClass(id, cls) { const el = this.shadowRoot.getElementById(id); if (el) el.className = cls; }
   _setStyle(id, prop, val) { const el = this.shadowRoot.getElementById(id); if (el) el.style[prop] = val; }
@@ -421,9 +421,23 @@ class ServerMonitorPanel extends HTMLElement {
     this.shadowRoot.getElementById('confirm-title').textContent = title;
     this.shadowRoot.getElementById('confirm-msg').textContent   = message;
     overlay.style.display = 'flex';
+
+    const okBtn     = this.shadowRoot.getElementById('confirm-ok');
+    const cancelBtn = this.shadowRoot.getElementById('confirm-cancel');
+
+    // If a previous confirm dialog was opened and then cancelled, its
+    // {once:true} listener on confirm-ok never fired and is still armed.
+    // Without this removal, cancelling one action and later confirming a
+    // different one would fire BOTH callbacks. Always clear old listeners
+    // before arming new ones.
+    if (this._confirmOkHandler)     okBtn.removeEventListener('click', this._confirmOkHandler);
+    if (this._confirmCancelHandler) cancelBtn.removeEventListener('click', this._confirmCancelHandler);
+
     const close = () => { overlay.style.display = 'none'; };
-    this.shadowRoot.getElementById('confirm-ok').addEventListener('click',     () => { onConfirm(); close(); }, { once:true });
-    this.shadowRoot.getElementById('confirm-cancel').addEventListener('click', close, { once:true });
+    this._confirmOkHandler     = () => { onConfirm(); close(); };
+    this._confirmCancelHandler = () => { close(); };
+    okBtn.addEventListener('click', this._confirmOkHandler, { once:true });
+    cancelBtn.addEventListener('click', this._confirmCancelHandler, { once:true });
   }
 
   _html() {
@@ -522,7 +536,7 @@ class ServerMonitorPanel extends HTMLElement {
           <!-- DISK -->
           <div class="section-page" data-page="disk" style="display:none">
             <div class="section-title">Drev — overblik <span id="health-disk" class="section-health" style="display:none"></span></div>
-            ${['nvme','sda','sdd','sdb','sdc'].map(id => `
+            ${this._s.DRIVES.map(d => d.id).map(id => `
             <div class="disk-row">
               <div class="disk-info">
                 <span id="disk-${id}-pct" class="disk-pct">—</span>

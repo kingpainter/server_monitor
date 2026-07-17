@@ -35,10 +35,14 @@ class ServerMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return ServerMonitorOptionsFlow(config_entry)
+        return ServerMonitorOptionsFlow()
 
 
 class ServerMonitorOptionsFlow(OptionsFlow):
+    # No __init__ / self.config_entry assignment here: HA's OptionsFlow base
+    # class now provides self.config_entry automatically. Explicitly setting
+    # it (or passing config_entry into the constructor) was deprecated and
+    # stopped working in HA 2025.12.
 
     async def async_step_init(self, user_input=None):
         options = self.config_entry.options

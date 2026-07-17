@@ -1,8 +1,9 @@
 {
   "domain": "server_monitor",
   "name": "Server Monitor",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "documentation": "https://github.com/Konge/server_monitor",
+  "integration_type": "service",
   "dependencies": ["http", "frontend", "panel_custom"],
   "codeowners": [],
   "requirements": [],

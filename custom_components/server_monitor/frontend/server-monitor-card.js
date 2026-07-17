@@ -58,9 +58,9 @@ class ServerMonitorCard extends HTMLElement {
     if (!this._built) { this._build(); } else { this._update(); }
   }
 
-  _val(eid, fallback = '—') { return this._hass?.states[eid]?.state ?? fallback; }
-  _isOn(eid) { const s = this._val(eid, 'off'); return s === 'on' || s === 'true'; }
-  _num(eid, fallback = 0) { const v = parseFloat(this._val(eid, fallback)); return isNaN(v) ? fallback : v; }
+  _val(eid, fallback = '—') { return this._s.stateOf(this._hass, eid, fallback); }
+  _isOn(eid) { return this._s.isOn(this._hass, eid); }
+  _num(eid, fallback = 0) { return this._s.numOf(this._hass, eid, fallback); }
 
   _build() {
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>${this._html()}`;
@@ -201,9 +201,22 @@ class ServerMonitorCard extends HTMLElement {
     this.shadowRoot.getElementById('confirm-title').textContent = title;
     this.shadowRoot.getElementById('confirm-msg').textContent   = message;
     o.style.display = 'flex';
+
+    const okBtn     = this.shadowRoot.getElementById('confirm-ok');
+    const cancelBtn = this.shadowRoot.getElementById('confirm-cancel');
+
+    // See server-monitor-panel.js _confirm() for why old listeners must be
+    // removed first: a previously-cancelled dialog leaves its confirm-ok
+    // listener armed, which would otherwise fire alongside a later
+    // confirmation for a different action.
+    if (this._confirmOkHandler)     okBtn.removeEventListener('click', this._confirmOkHandler);
+    if (this._confirmCancelHandler) cancelBtn.removeEventListener('click', this._confirmCancelHandler);
+
     const close = () => { o.style.display = 'none'; };
-    this.shadowRoot.getElementById('confirm-ok').addEventListener('click',     () => { onConfirm(); close(); }, { once: true });
-    this.shadowRoot.getElementById('confirm-cancel').addEventListener('click', close, { once: true });
+    this._confirmOkHandler     = () => { onConfirm(); close(); };
+    this._confirmCancelHandler = () => { close(); };
+    okBtn.addEventListener('click', this._confirmOkHandler, { once: true });
+    cancelBtn.addEventListener('click', this._confirmCancelHandler, { once: true });
   }
 
   _html() {

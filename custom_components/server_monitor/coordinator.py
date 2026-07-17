@@ -5,8 +5,7 @@ import logging
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
+from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, MONITORED_ENTITIES
 
@@ -16,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 
 
-class ServerMonitorCoordinator(DataUpdateCoordinator[dict]):
+class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
     """Coordinator that polls the health of entities the frontend depends on.
 
     The Server Monitor panel/card do not read from this integration's own
@@ -29,6 +28,11 @@ class ServerMonitorCoordinator(DataUpdateCoordinator[dict]):
     SCAN_INTERVAL and reports which ones are missing or unavailable, so a
     diagnostics sensor (sensor.py) can surface the problem as an entity
     state instead of a silent dash in the panel.
+
+    Uses TimestampDataUpdateCoordinator (rather than plain
+    DataUpdateCoordinator) so the last successful check time is tracked by
+    HA itself via self.last_update_success_time, instead of hand-rolling a
+    "last_check" timestamp in the returned data.
     """
 
     def __init__(self, hass: HomeAssistant) -> None:
@@ -61,8 +65,11 @@ class ServerMonitorCoordinator(DataUpdateCoordinator[dict]):
             "missing": ["sensor.foo", ...],       # entity_id not registered at all
             "unavailable": ["sensor.bar", ...],   # entity_id is unavailable/unknown
             "problem_count": 2,
-            "last_check": "2026-07-15T12:00:00+00:00",
         }
+
+        The last-check timestamp is not part of this dict — it's read from
+        self.last_update_success_time (provided by TimestampDataUpdateCoordinator)
+        in sensor.py instead.
         """
         missing: list[str] = []
         unavailable: list[str] = []
@@ -85,5 +92,4 @@ class ServerMonitorCoordinator(DataUpdateCoordinator[dict]):
             "missing": missing,
             "unavailable": unavailable,
             "problem_count": len(missing) + len(unavailable),
-            "last_check": dt_util.utcnow().isoformat(),
         }

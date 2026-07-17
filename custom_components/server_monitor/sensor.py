@@ -57,9 +57,10 @@ class ServerMonitorHealthSensor(CoordinatorEntity[ServerMonitorCoordinator], Sen
     @property
     def extra_state_attributes(self) -> dict:
         data = self.coordinator.data
+        last_check = self.coordinator.last_update_success_time
         return {
             "checked": data.get("checked", 0),
             "missing_entities": data.get("missing", []),
             "unavailable_entities": data.get("unavailable", []),
-            "last_check": data.get("last_check"),
+            "last_check": last_check.isoformat() if last_check else None,
         }

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.2 — 2026-07-16
+
+### Changed
+- **`coordinator.py`**: switched from `DataUpdateCoordinator` to `TimestampDataUpdateCoordinator`. The last-successful-check timestamp is now tracked natively via `self.last_update_success_time` instead of being hand-rolled into the returned data dict as `"last_check": dt_util.utcnow().isoformat()`. `sensor.py`'s `last_check` attribute now reads from the coordinator directly.
+- **Panel/card helper functions**: `_val`, `_num`, `_isOn`, `_attr` in `server-monitor-panel.js` and `server-monitor-card.js` now delegate to the equivalent `stateOf`/`numOf`/`isOn`/`attrOf` helpers already exported by `server-monitor-shared.js`, instead of maintaining separate copies of the same logic in three places.
+
+## 1.3.1 — 2026-07-16
+
+### Fixed
+- **Confirm-dialog listener leak (panel + card)**: `_confirm()` armed a fresh `{once:true}` click listener on `confirm-ok` every time it was called, but never removed it if the user cancelled instead. Cancelling one destructive action (e.g. reboot) left its listener still attached; confirming a *different* action afterwards (e.g. shutdown) fired both callbacks together. Old listeners are now explicitly removed before new ones are armed.
+- **`config_flow.py`**: `async_get_options_flow` passed `config_entry` positionally into `ServerMonitorOptionsFlow()`. HA deprecated this pattern and it stops working as of HA 2025.12 — the options flow now takes no constructor argument and relies on the base class's automatic `self.config_entry`.
+- **`Server Monthly Cost` icon**: was `mdi:currency-krw` (Korean Won) on a DKK sensor. Changed to `mdi:cash`.
+
+### Changed
+- **`Megalageret Docker Total`**: was a hardcoded literal `"18"`; now derived by counting the same container-state list used by `Megalageret Docker Running`, so the two numbers can't drift out of sync if a container is added or removed.
+- **Disk section in the panel** no longer hardcodes `['nvme','sda','sdd','sdb','sdc']` — reads drive IDs from `server-monitor-shared.js`'s `DRIVES` list instead, removing a fourth duplicate copy of the drive list.
+- `manifest.json`: added `"integration_type": "service"` for hassfest compliance on newer HA versions.
+
 ## 1.3.0 — 2026-07-15
 
 ### Added
