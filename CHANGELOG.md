@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3.3 — 2026-09-26
+
+### Added
+- **Automated entity ID sync test** (`tests/test_entity_sync.py`) — validates that 79 monitored entities in `const.py` match `shared.js` exports. Runs on CI to catch drift between Python and JavaScript definitions.
+- **`safeNumOf()` helper** in `server-monitor-shared.js` — wraps `numOf()` and validates that numeric values are finite (not NaN or Infinity). Prevents chart corruption from invalid data.
+
+### Changed
+- **Refactored JavaScript entity IDs** — migrated 41 hardcoded entity ID strings in `panel.js` (29) and `card.js` (12) to use `shared.js` exports. Entity IDs are now sourced exclusively from `STATUS_ENTITIES`, `ENERGY_ENTITIES`, `SYSTEM_ENTITIES`, `DOCKER_AGG_ENTITIES`, and `ACTION_ENTITIES` objects, centralizing configuration to a single source of truth.
+  - Before: `const uptime = this._val('sensor.omv_megalageret_local_uptime');`
+  - After: `const uptime = this._val(this._s.STATUS_ENTITIES.uptime);`
+- **Strict typing across all Python files** — added comprehensive type hints to `__init__.py`, `coordinator.py`, `sensor.py`, `config_flow.py`, and `const.py`. Compliant with Home Assistant 2026+ Quality Scale strict-typing requirement.
+- **Added `py.typed` marker file** (PEP 561 compliance) to signal that the integration has inline type annotations.
+- **Enhanced entity-health logging** — coordinator now logs missing/unavailable entity counts with first-5 samples at warning level instead of debug. Improved observability when entities disappear upstream.
+
+### Fixed
+- **Entity ID drift detection** — formerly a manual task, now caught automatically by `test_entity_sync.py` at CI time.
+
+### Technical
+- All function parameters and return types now explicitly typed (`dict[str, Any]` for all dictionaries).
+- JavaScript validation prevents NaN and Infinity from corrupting chart data.
+- New test infrastructure: `tests/__init__.py` and `tests/conftest.py` for pytest support.
+
+### Known limitation resolved
+- Entity ID duplication between `const.py` and `shared.js` now has automated verification via `test_entity_sync.py`. Manual sync is still required, but failures are caught immediately.
+
+
 ## 1.3.2 — 2026-07-16
 
 ### Changed
