@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from homeassistant.components import frontend
 from homeassistant.components.http import StaticPathConfig
@@ -31,11 +32,13 @@ _FRONTEND_DIR = Path(__file__).parent / "frontend"
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
+    """Set up the Server Monitor integration."""
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Server Monitor from a config entry."""
     coordinator = ServerMonitorCoordinator(hass)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = {"coordinator": coordinator}
@@ -55,12 +58,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     _async_remove_panel_quietly(hass)
     return unload_ok
 
 
 async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Register the panel with retry-on-conflict logic."""
     options = entry.options
     enabled = options.get(CONF_PANEL_ENABLED, DEFAULT_PANEL_ENABLED)
 
@@ -89,13 +94,17 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 
 def _async_remove_panel_quietly(hass: HomeAssistant) -> None:
+    """Remove panel registration without raising exceptions."""
     try:
         frontend.async_remove_panel(hass, PANEL_URL, warn_if_unknown=False)
     except Exception:  # noqa: BLE001
         _LOGGER.debug("Panel '%s' was not registered — nothing to remove", PANEL_URL)
 
 
-async def _async_do_register_panel(hass: HomeAssistant, options) -> None:
+async def _async_do_register_panel(
+    hass: HomeAssistant, options: dict[str, Any]
+) -> None:
+    """Register the panel with given options."""
     await async_register_panel(
         hass,
         webcomponent_name="server-monitor-panel",
@@ -110,4 +119,5 @@ async def _async_do_register_panel(hass: HomeAssistant, options) -> None:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle options update."""
     await hass.config_entries.async_reload(entry.entry_id)

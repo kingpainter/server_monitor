@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator, UpdateFailed
@@ -15,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 
 
-class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
+class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     """Coordinator that polls the health of entities the frontend depends on.
 
     The Server Monitor panel/card do not read from this integration's own
@@ -36,6 +37,7 @@ class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
     """
 
     def __init__(self, hass: HomeAssistant) -> None:
+        """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
@@ -43,7 +45,7 @@ class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
             update_interval=SCAN_INTERVAL,
         )
 
-    async def _async_update_data(self) -> dict:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Check health of MONITORED_ENTITIES.
 
         This never raises UpdateFailed for missing/unavailable monitored
@@ -56,7 +58,7 @@ class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
         except Exception as err:  # noqa: BLE001
             raise UpdateFailed(f"Error checking server monitor entity health: {err}") from err
 
-    async def _async_fetch_data(self) -> dict:
+    async def _async_fetch_data(self) -> dict[str, Any]:
         """Check which monitored entities are missing or unavailable.
 
         Return shape:
@@ -82,9 +84,10 @@ class ServerMonitorCoordinator(TimestampDataUpdateCoordinator[dict]):
                 unavailable.append(entity_id)
 
         if missing or unavailable:
-            _LOGGER.debug(
-                "Server Monitor entity health check: %d missing, %d unavailable",
-                len(missing), len(unavailable),
+            _LOGGER.warning(
+                "Server Monitor entity health issues: %d missing %s, %d unavailable %s",
+                len(missing), missing[:5] if missing else [],
+                len(unavailable), unavailable[:5] if unavailable else [],
             )
 
         return {

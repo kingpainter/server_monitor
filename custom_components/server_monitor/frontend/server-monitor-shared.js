@@ -125,14 +125,26 @@ export const SERVICES = [
 export function stateOf(hass, eid, fallback = '—') {
   return hass?.states?.[eid]?.state ?? fallback;
 }
+
 export function numOf(hass, eid, fallback = 0) {
   const v = parseFloat(stateOf(hass, eid, fallback));
   return isNaN(v) ? fallback : v;
 }
+
+/**
+ * Safe numeric conversion with NaN/Infinity validation.
+ * Returns fallback if value is NaN or not finite (infinite).
+ */
+export function safeNumOf(hass, eid, fallback = 0) {
+  const v = numOf(hass, eid, fallback);
+  return Number.isFinite(v) ? v : fallback;
+}
+
 export function isOn(hass, eid) {
   const s = stateOf(hass, eid, 'off');
   return s === 'on' || s === 'true';
 }
+
 export function attrOf(hass, eid, attr, fallback = '—') {
   return hass?.states?.[eid]?.attributes?.[attr] ?? fallback;
 }

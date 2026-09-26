@@ -113,12 +113,12 @@ class ServerMonitorPanel extends HTMLElement {
   }
 
   _updateStatusBar() {
-    const uptime  = this._val('sensor.omv_megalageret_local_uptime');
+    const uptime  = this._val(this._s.STATUS_ENTITIES.uptime);
     const online  = uptime !== '—' && uptime !== 'unavailable' && uptime !== 'unknown';
-    const reboot  = this._isOn('binary_sensor.omv_megalageret_local_reboot_required');
-    const update  = this._isOn('update.omv_megalageret_local_system_update');
-    const pkgs    = this._num('sensor.omv_megalageret_local_available_package_updates', 0);
-    const stopped = this._num('sensor.omv_megalageret_local_docker_containers_not_running', 0);
+    const reboot  = this._isOn(this._s.STATUS_ENTITIES.reboot);
+    const update  = this._isOn(this._s.STATUS_ENTITIES.update);
+    const pkgs    = this._num(this._s.STATUS_ENTITIES.packages, 0);
+    const stopped = this._num(this._s.STATUS_ENTITIES.dockerStopped, 0);
 
     this._setText('sb-uptime', online ? uptime : 'Offline');
     this._setClass('sb-uptime-dot', 'dot ' + (online ? 'green' : 'red'));
@@ -148,13 +148,13 @@ class ServerMonitorPanel extends HTMLElement {
   }
 
   _updateEnergi() {
-    const power   = this._num('sensor.server_energimaler_power', 0);
-    const voltage = this._num('sensor.server_energimaler_voltage', 0);
-    const current = this._num('sensor.server_energimaler_current', 0);
-    const price   = this._num('sensor.energy_hub_elhub_price_total', 0);
-    const co2     = this._num('sensor.energi_data_service_co2', 0);
-    const kwh     = this._num('sensor.server_monthly_kwh', 0);
-    const cost    = this._num('sensor.server_monthly_cost', 0);
+    const power   = this._num(this._s.ENERGY_ENTITIES.power, 0);
+    const voltage = this._num(this._s.ENERGY_ENTITIES.voltage, 0);
+    const current = this._num(this._s.ENERGY_ENTITIES.current, 0);
+    const price   = this._num(this._s.ENERGY_ENTITIES.price, 0);
+    const co2     = this._num(this._s.ENERGY_ENTITIES.co2, 0);
+    const kwh     = this._num(this._s.ENERGY_ENTITIES.kwh, 0);
+    const cost    = this._num(this._s.ENERGY_ENTITIES.cost, 0);
 
     this._setText('e-power',   power + ' W');
     this._setText('e-voltage', voltage + ' V');
@@ -186,15 +186,15 @@ class ServerMonitorPanel extends HTMLElement {
   }
 
   _updateSystem() {
-    const ram     = this._num('sensor.omv_megalageret_local_memory_usage', 0);
-    const ramUsed = this._val('sensor.omv_megalageret_local_memory_used');
-    const ramTot  = this._val('sensor.omv_megalageret_local_memory_total');
-    const gpuLoad = this._num('sensor.omv_megalageret_local_gpu_load', 0);
-    const gpuFreq = this._val('sensor.omv_megalageret_local_gpu_frequency');
-    const rx0     = this._num('sensor.omv_megalageret_local_enp1s0f0_rx', 0);
-    const tx0     = this._num('sensor.omv_megalageret_local_enp1s0f0_tx', 0);
-    const rx1     = this._num('sensor.omv_megalageret_local_enp1s0f1_rx', 0);
-    const tx1     = this._num('sensor.omv_megalageret_local_enp1s0f1_tx', 0);
+    const ram     = this._num(this._s.SYSTEM_ENTITIES.ram, 0);
+    const ramUsed = this._val(this._s.SYSTEM_ENTITIES.ramUsed);
+    const ramTot  = this._val(this._s.SYSTEM_ENTITIES.ramTotal);
+    const gpuLoad = this._num(this._s.SYSTEM_ENTITIES.gpuLoad, 0);
+    const gpuFreq = this._val(this._s.SYSTEM_ENTITIES.gpuFreq);
+    const rx0     = this._num(this._s.SYSTEM_ENTITIES.rx0, 0);
+    const tx0     = this._num(this._s.SYSTEM_ENTITIES.tx0, 0);
+    const rx1     = this._num(this._s.SYSTEM_ENTITIES.rx1, 0);
+    const tx1     = this._num(this._s.SYSTEM_ENTITIES.tx1, 0);
 
     this._setText('sys-ram-pct', ram + '%');
     this._setText('sys-ram-used', ramUsed);
@@ -223,7 +223,7 @@ class ServerMonitorPanel extends HTMLElement {
   _updatePowerSwitch() {
     const btn = this.shadowRoot.getElementById('act-power-switch');
     if (!btn) return;
-    const s = this._hass?.states['switch.megalageret_remote_socket_1']?.state;
+    const s = this._hass?.states[this._s.ENERGY_ENTITIES.powerSwitch]?.state;
     if (s === 'on') {
       btn.textContent = '⚡ Strøm til serveren';
       btn.className   = 'act-btn power-switch';
@@ -259,9 +259,9 @@ class ServerMonitorPanel extends HTMLElement {
   }
 
   _updateDocker() {
-    const running = this._num('sensor.megalageret_docker_running_2', 0);
-    const total   = this._num('sensor.megalageret_docker_total_2', 0);
-    const stopped = this._num('sensor.omv_megalageret_local_docker_containers_not_running', 0);
+    const running = this._num(this._s.DOCKER_AGG_ENTITIES.running, 0);
+    const total   = this._num(this._s.DOCKER_AGG_ENTITIES.total, 0);
+    const stopped = this._num(this._s.STATUS_ENTITIES.dockerStopped, 0);
     this._setText('dk-running', running + '');
     this._setText('dk-stopped', stopped + '');
     this._setText('dk-total',   total + '');
@@ -347,7 +347,7 @@ class ServerMonitorPanel extends HTMLElement {
     if (!this._powerChart) return;
     const padded = Array(60).fill(null);
     this._powerHistory.forEach((v,i) => { padded[60-this._powerHistory.length+i] = v; });
-    const price = this._num('sensor.energy_hub_elhub_price_total', 1.5);
+    const price = this._num(this._s.ENERGY_ENTITIES.price, 1.5);
     let data, color, bgColor, unit;
     if (this._powerTab === 'kwh') {
       let acc=0; data=padded.map(v=>v!==null?parseFloat((acc+=v/1000/60,acc).toFixed(3)):null);
@@ -394,23 +394,23 @@ class ServerMonitorPanel extends HTMLElement {
     const root = this.shadowRoot;
     // Power switch — kun tænd
     root.getElementById('act-power-switch')?.addEventListener('click', () => {
-      if (this._hass?.states['switch.megalageret_remote_socket_1']?.state !== 'on')
-        this._hass?.callService('switch', 'turn_on', { entity_id: 'switch.megalageret_remote_socket_1' });
+      if (this._hass?.states[this._s.ENERGY_ENTITIES.powerSwitch]?.state !== 'on')
+        this._hass?.callService('switch', 'turn_on', { entity_id: this._s.ENERGY_ENTITIES.powerSwitch });
     });
     root.getElementById('act-reboot')?.addEventListener('click', () =>
       this._confirm('↺ Genstart server?', 'Serveren genstarter. Vil være utilgængelig i 1–2 minutter.',
-        () => this._pressButton('button.omv_megalageret_local_reboot')));
+        () => this._pressButton(this._s.ACTION_ENTITIES.reboot)));
     root.getElementById('act-shutdown')?.addEventListener('click', () =>
       this._confirm('⏻ Luk server ned?', 'Serveren lukkes ned og skal startes manuelt igen.',
-        () => this._pressButton('button.omv_megalageret_local_shutdown')));
+        () => this._pressButton(this._s.ACTION_ENTITIES.shutdown)));
     root.getElementById('act-apply')?.addEventListener('click', () =>
-      this._pressButton('button.omv_megalageret_local_apply_configuration'));
+      this._pressButton(this._s.ACTION_ENTITIES.apply));
     root.getElementById('act-prune-containers')?.addEventListener('click', () =>
       this._confirm('🗑 Docker container prune?', 'Sletter alle stoppede Docker containers.',
-        () => this._pressButton('button.omv_megalageret_local_docker_container_prune')));
+        () => this._pressButton(this._s.ACTION_ENTITIES.pruneContainers)));
     root.getElementById('act-prune-images')?.addEventListener('click', () =>
       this._confirm('🗑 Docker image prune?', 'Sletter alle ubrugte Docker images.',
-        () => this._pressButton('button.omv_megalageret_local_docker_image_prune')));
+        () => this._pressButton(this._s.ACTION_ENTITIES.pruneImages)));
   }
 
   _pressButton(entityId) { this._hass?.callService('button', 'press', { entity_id: entityId }); }

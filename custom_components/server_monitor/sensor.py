@@ -1,6 +1,8 @@
 """Sensor platform for Server Monitor — entity health diagnostics."""
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -36,6 +38,7 @@ class ServerMonitorHealthSensor(CoordinatorEntity[ServerMonitorCoordinator], Sen
     _attr_native_unit_of_measurement = "problems"
 
     def __init__(self, coordinator: ServerMonitorCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = SENSOR_HEALTH_UNIQUE_ID
         self._attr_device_info = DeviceInfo(
@@ -47,15 +50,18 @@ class ServerMonitorHealthSensor(CoordinatorEntity[ServerMonitorCoordinator], Sen
 
     @property
     def native_value(self) -> int:
+        """Return the number of problem entities."""
         return self.coordinator.data.get("problem_count", 0)
 
     @property
     def icon(self) -> str:
+        """Return icon based on problem count."""
         problems = self.coordinator.data.get("problem_count", 0)
         return "mdi:alert-network-outline" if problems else "mdi:check-network-outline"
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra state attributes with diagnostics."""
         data = self.coordinator.data
         last_check = self.coordinator.last_update_success_time
         return {

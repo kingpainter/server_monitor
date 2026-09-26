@@ -29,18 +29,18 @@ class ServerMonitorCard extends HTMLElement {
     const act = this._s?.ACTION_ENTITIES || {};
     this.config = {
       title:                 config.title                 || 'megalageret',
-      uptime_entity:         config.uptime_entity         || st.uptime         || 'sensor.omv_megalageret_local_uptime',
-      reboot_entity:         config.reboot_entity         || st.reboot         || 'binary_sensor.omv_megalageret_local_reboot_required',
-      update_entity:         config.update_entity         || st.update         || 'update.omv_megalageret_local_system_update',
-      packages_entity:       config.packages_entity       || st.packages       || 'sensor.omv_megalageret_local_available_package_updates',
-      docker_running_entity: config.docker_running_entity || dk.running        || 'sensor.megalageret_docker_running_2',
-      docker_total_entity:   config.docker_total_entity   || dk.total          || 'sensor.megalageret_docker_total_2',
-      docker_stopped_entity: config.docker_stopped_entity || st.dockerStopped  || 'sensor.omv_megalageret_local_docker_containers_not_running',
-      power_entity:          config.power_entity          || e.power           || 'sensor.server_energimaler_power',
-      price_entity:          config.price_entity          || e.price           || 'sensor.energy_hub_elhub_price_total',
-      power_switch:          config.power_switch          || e.powerSwitch     || 'switch.megalageret_remote_socket_1',
-      reboot_button:         config.reboot_button         || act.reboot        || 'button.omv_megalageret_local_reboot',
-      shutdown_button:       config.shutdown_button       || act.shutdown      || 'button.omv_megalageret_local_shutdown',
+      uptime_entity:         config.uptime_entity         || st.uptime         || this._s.STATUS_ENTITIES.uptime,
+      reboot_entity:         config.reboot_entity         || st.reboot         || this._s.STATUS_ENTITIES.reboot,
+      update_entity:         config.update_entity         || st.update         || this._s.STATUS_ENTITIES.update,
+      packages_entity:       config.packages_entity       || st.packages       || this._s.STATUS_ENTITIES.packages,
+      docker_running_entity: config.docker_running_entity || dk.running        || this._s.DOCKER_AGG_ENTITIES.running,
+      docker_total_entity:   config.docker_total_entity   || dk.total          || this._s.DOCKER_AGG_ENTITIES.total,
+      docker_stopped_entity: config.docker_stopped_entity || st.dockerStopped  || this._s.STATUS_ENTITIES.dockerStopped,
+      power_entity:          config.power_entity          || e.power           || this._s.ENERGY_ENTITIES.power,
+      price_entity:          config.price_entity          || e.price           || this._s.ENERGY_ENTITIES.price,
+      power_switch:          config.power_switch          || e.powerSwitch     || this._s.ENERGY_ENTITIES.powerSwitch,
+      reboot_button:         config.reboot_button         || act.reboot        || this._s.ACTION_ENTITIES.reboot,
+      shutdown_button:       config.shutdown_button       || act.shutdown      || this._s.ACTION_ENTITIES.shutdown,
     };
   }
 

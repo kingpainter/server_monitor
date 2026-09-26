@@ -23,9 +23,12 @@ from .const import (
 
 
 class ServerMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Config flow for Server Monitor."""
+
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle user step."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
         if user_input is not None:
@@ -34,17 +37,16 @@ class ServerMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Return the options flow."""
         return ServerMonitorOptionsFlow()
 
 
 class ServerMonitorOptionsFlow(OptionsFlow):
-    # No __init__ / self.config_entry assignment here: HA's OptionsFlow base
-    # class now provides self.config_entry automatically. Explicitly setting
-    # it (or passing config_entry into the constructor) was deprecated and
-    # stopped working in HA 2025.12.
+    """Options flow for Server Monitor."""
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle options step."""
         options = self.config_entry.options
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
